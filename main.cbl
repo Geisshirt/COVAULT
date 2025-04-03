@@ -23,6 +23,12 @@
        01  Identifier          PIC X(50).
        01  NewPassword         PIC X(50).
        01  TempRecord          PIC X(100).
+       01  CLEAR-COMMAND       PIC X(100) VALUE "clear".
+       01  EOF                 PIC X(01) VALUE 'N'.
+       01  PswRecord           PIC X(100).
+       01  ReadIdentifier      PIC X(50).
+       01  ReadPassword        PIC X(50).
+       01  Temp                PIC X(1).
        
        PROCEDURE DIVISION.
            OPEN INPUT PswFile
@@ -36,6 +42,7 @@
                    UNSTRING PasswordRecord DELIMITED BY ',' 
                        INTO Identifier CorrectPassword
 
+               CALL "SYSTEM" USING CLEAR-COMMAND
                DISPLAY 'Enter main password: '                   
                ACCEPT UserPassword
                               
@@ -55,7 +62,7 @@
               STRING 
                   'MAIN_USER'
                   ',' 
-                  FUNCTION TRIM(MainPassword) 
+                  FUNCTION TRIM(MainPassword)
                   DELIMITED BY SIZE 
                   INTO TempRecord
 
@@ -73,6 +80,7 @@
 
        Choices.
            PERFORM UNTIL Choice = '3'
+               CALL "SYSTEM" USING CLEAR-COMMAND
                DISPLAY '1) Add password'
                DISPLAY '2) View passwords'
                DISPLAY '3) Exit'
@@ -81,9 +89,7 @@
                    WHEN '1'
                        PERFORM AddPassword
                    WHEN '2'
-                       DISPLAY 'Feature not implemented yet.'
-                   WHEN '3'
-                       EXIT PERFORM
+                       PERFORM ViewPassword
                    WHEN OTHER
                        PERFORM Choices
                END-EVALUATE
@@ -103,7 +109,7 @@
            ACCEPT NewPassword
     
            IF FUNCTION TRIM(NewPassword) = '' THEN
-               MOVE 'hejsa' TO NewPassword
+               MOVE 'Auto generated password.' TO NewPassword
            END-IF
     
            STRING 
@@ -123,4 +129,42 @@
            END-IF
     
            CLOSE PswFile.
+
+       ViewPassword.
+           MOVE 'N' TO EOF  *> Reset EOF flag
+           OPEN INPUT PswFile
+           IF FileStatus NOT = '00' THEN
+               DISPLAY 'Error opening file for reading.'
+               CLOSE PswFile
+               STOP RUN
+           END-IF
     
+           DISPLAY 
+               'Type identifier or press enter to show all passwords.'
+           ACCEPT Identifier
+    
+           PERFORM UNTIL EOF = 'Y'
+               READ PswFile INTO PswRecord
+                   AT END 
+                       MOVE 'Y' TO EOF
+                   NOT AT END 
+                       UNSTRING PswRecord DELIMITED BY ','
+                           INTO ReadIdentifier, ReadPassword
+                       END-UNSTRING
+                       
+                       IF FUNCTION TRIM(Identifier) = '' THEN
+                           DISPLAY 'ID: ' FUNCTION TRIM(ReadIdentifier) 
+                              ', Password: ' FUNCTION TRIM(ReadPassword)
+       
+                       ELSE
+                           IF FUNCTION TRIM (ReadIdentifier) 
+                               = FUNCTION TRIM(Identifier) 
+                               DISPLAY 'Password for ' FUNCTION 
+                                   TRIM(Identifier) ': ' ReadPassword
+                           END-IF
+                       END-IF
+               END-READ
+           END-PERFORM.
+           DISPLAY "Press any key to continue."
+           ACCEPT Temp
+           CLOSE PswFile.
