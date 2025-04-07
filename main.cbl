@@ -29,7 +29,8 @@
        01  ReadIdentifier      PIC X(50).
        01  ReadPassword        PIC X(50).
        01  Temp                PIC X(1).
-       
+       01 DecryptedPassword    PIC X(50).
+
        PROCEDURE DIVISION.
            OPEN INPUT PswFile
            IF FileStatus = '00' THEN
@@ -43,7 +44,7 @@
                        INTO Identifier CorrectPassword
 
                CALL "SYSTEM" USING CLEAR-COMMAND
-               DISPLAY 'Enter main password: '                   
+               DISPLAY 'Enter main password: '
                ACCEPT UserPassword
                               
                IF FUNCTION TRIM(UserPassword) = 
@@ -111,11 +112,13 @@
            IF FUNCTION TRIM(NewPassword) = '' THEN
                MOVE 'Auto generated password.' TO NewPassword
            END-IF
-    
+
+           CALL 'Encrypt' USING NewPassword CorrectPassword NewPassword
+
            STRING 
                FUNCTION TRIM(Identifier) 
                ',' 
-               FUNCTION TRIM(NewPassword) 
+               FUNCTION TRIM(NewPassword)
                DELIMITED BY SIZE 
                INTO TempRecord
     
@@ -151,20 +154,29 @@
                        UNSTRING PswRecord DELIMITED BY ','
                            INTO ReadIdentifier, ReadPassword
                        END-UNSTRING
-                       
+
+                       CALL 'Decrypt'
+                           USING ReadPassword 
+                                 CorrectPassword 
+                                 DecryptedPassword
+
                        IF FUNCTION TRIM(Identifier) = '' THEN
-                           DISPLAY 'ID: ' FUNCTION TRIM(ReadIdentifier) 
-                              ', Password: ' FUNCTION TRIM(ReadPassword)
-       
+                           DISPLAY 'ID: ' 
+                                   FUNCTION TRIM(ReadIdentifier) 
+                                   ', Password: ' 
+                                   FUNCTION TRIM(DecryptedPassword)
                        ELSE
-                           IF FUNCTION TRIM (ReadIdentifier) 
-                               = FUNCTION TRIM(Identifier) 
-                               DISPLAY 'Password for ' FUNCTION 
-                                   TRIM(Identifier) ': ' ReadPassword
+                           IF FUNCTION TRIM(ReadIdentifier) 
+                                   = FUNCTION TRIM(Identifier) 
+                               DISPLAY 'Password for ' 
+                                   FUNCTION TRIM(Identifier) 
+                                   ': ' 
+                                   FUNCTION TRIM(DecryptedPassword)
                            END-IF
                        END-IF
                END-READ
            END-PERFORM.
+           DISPLAY ""
            DISPLAY "Press any key to continue."
            ACCEPT Temp
            CLOSE PswFile.
