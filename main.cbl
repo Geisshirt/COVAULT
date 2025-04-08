@@ -15,21 +15,23 @@
        01  PasswordRecord    PIC X(100).  
 
        WORKING-STORAGE SECTION.
-       01  UserPassword        PIC X(50).
-       01  FileStatus          PIC XX.
-       01  CorrectPassword     PIC X(50).
-       01  MainPassword        PIC X(50).
-       01  Choice              PIC X(1).
-       01  Identifier          PIC X(50).
-       01  NewPassword         PIC X(50).
-       01  TempRecord          PIC X(100).
-       01  CLEAR-COMMAND       PIC X(100) VALUE "clear".
-       01  EOF                 PIC X(01) VALUE 'N'.
-       01  PswRecord           PIC X(100).
-       01  ReadIdentifier      PIC X(50).
-       01  ReadPassword        PIC X(50).
-       01  Temp                PIC X(1).
-       01 DecryptedPassword    PIC X(50).
+       01  FileStatus             PIC XX.
+       01  CorrectPassword        PIC X(50).
+       01  MainPassword           PIC X(50).
+       01  Choice                 PIC X(1).
+       01  Identifier             PIC X(50).
+       01  NewPassword            PIC X(50).
+       01  TempRecord             PIC X(100).
+       01  CLEAR-COMMAND          PIC X(100) VALUE "clear".
+       01  EOF                    PIC X(01) VALUE 'N'.
+       01  PswRecord              PIC X(100).
+       01  ReadIdentifier         PIC X(50).
+       01  ReadPassword           PIC X(50).
+       01  Temp                   PIC X(1).
+       01  DecryptedPassword      PIC X(50).
+       01  EncryptedMainPassword  PIC X(100).
+       01  EncryptedUserPassword  PIC X(100).
+       01  FirstLineProcessed      PIC X(1) VALUE 'N'.
 
        PROCEDURE DIVISION.
            OPEN INPUT PswFile
@@ -42,39 +44,52 @@
                ELSE
                    UNSTRING PasswordRecord DELIMITED BY ',' 
                        INTO Identifier CorrectPassword
-
-               CALL "SYSTEM" USING CLEAR-COMMAND
-               DISPLAY 'Enter main password: '
-               ACCEPT UserPassword
-                              
-               IF FUNCTION TRIM(UserPassword) = 
-                       FUNCTION TRIM(CorrectPassword) THEN
-                   CLOSE PswFile
-                   PERFORM Choices
-               ELSE
-                   DISPLAY 'Incorrect password.'
-                   CLOSE PswFile
-                   STOP RUN
+       
+                   CALL "SYSTEM" USING CLEAR-COMMAND
+                   DISPLAY 'Enter main password: '
+                   ACCEPT MainPassword
+       
+                   CALL 'Encrypt' USING 
+                       FUNCTION TRIM(MainPassword), 
+                       FUNCTION TRIM(MainPassword), 
+                       EncryptedMainPassword
+       
+                   IF FUNCTION TRIM(EncryptedMainPassword) = 
+                           FUNCTION TRIM(CorrectPassword) THEN
+                       CLOSE PswFile
+                       PERFORM Choices
+                   ELSE
+                       DISPLAY 'Incorrect password.'
+                       CLOSE PswFile
+                       STOP RUN
+                   END-IF
                END-IF
-
+       
            ELSE
-              DISPLAY 'Type in main password to create user:'
-              ACCEPT MainPassword
-              STRING 
-                  'MAIN_USER'
-                  ',' 
-                  FUNCTION TRIM(MainPassword)
-                  DELIMITED BY SIZE 
-                  INTO TempRecord
-
-              OPEN OUTPUT PswFile
-              IF FileStatus = '00' THEN
-                  MOVE TempRecord TO PasswordRecord
-                  WRITE PasswordRecord
-                  CLOSE PswFile
-                  DISPLAY 'Main password saved.'
-              END-IF
-              PERFORM Choices
+               CALL "SYSTEM" USING CLEAR-COMMAND
+               DISPLAY 'Type in main password to create user:'
+               ACCEPT MainPassword
+       
+               CALL 'Encrypt' USING 
+                   FUNCTION TRIM(MainPassword), 
+                   FUNCTION TRIM(MainPassword), 
+                   EncryptedMainPassword
+       
+               STRING 
+                   'USER'
+                   ','
+                   FUNCTION TRIM(EncryptedMainPassword)
+                   DELIMITED BY SIZE 
+                   INTO TempRecord
+       
+               OPEN OUTPUT PswFile
+               IF FileStatus = '00' THEN
+                   MOVE TempRecord TO PasswordRecord
+                   WRITE PasswordRecord
+                   CLOSE PswFile
+                   DISPLAY 'Main password saved.'
+               END-IF
+               PERFORM Choices
            END-IF
            CLOSE PswFile.
            STOP RUN.
@@ -113,7 +128,11 @@
                MOVE 'Auto generated password.' TO NewPassword
            END-IF
 
-           CALL 'Encrypt' USING NewPassword CorrectPassword NewPassword
+           CALL 'Encrypt' 
+               USING 
+                   NewPassword 
+                   MainPassword 
+                   NewPassword
 
            STRING 
                FUNCTION TRIM(Identifier) 
@@ -155,27 +174,34 @@
                            INTO ReadIdentifier, ReadPassword
                        END-UNSTRING
 
-                       CALL 'Decrypt'
-                           USING ReadPassword 
-                                 CorrectPassword 
-                                 DecryptedPassword
-
-                       IF FUNCTION TRIM(Identifier) = '' THEN
-                           DISPLAY 'ID: ' 
-                                   FUNCTION TRIM(ReadIdentifier) 
-                                   ', Password: ' 
-                                   FUNCTION TRIM(DecryptedPassword)
+                       IF FUNCTION TRIM(ReadIdentifier) = 'USER'
+                           CONTINUE
                        ELSE
-                           IF FUNCTION TRIM(ReadIdentifier) 
-                                   = FUNCTION TRIM(Identifier) 
-                               DISPLAY 'Password for ' 
-                                   FUNCTION TRIM(Identifier) 
-                                   ': ' 
-                                   FUNCTION TRIM(DecryptedPassword)
-                           END-IF
+                              CALL 'Decrypt'
+                                  USING ReadPassword 
+                                        MainPassword 
+                                        DecryptedPassword
+       
+                              IF FUNCTION TRIM(Identifier) = '' THEN
+                                  DISPLAY 'ID: ' 
+                                          FUNCTION TRIM(ReadIdentifier) 
+                                          ', Password: ' 
+                                          FUNCTION 
+                                           TRIM(DecryptedPassword)
+                              ELSE
+                                  IF FUNCTION TRIM(ReadIdentifier) 
+                                          = FUNCTION TRIM(Identifier) 
+                                      DISPLAY 'Password for ' 
+                                          FUNCTION TRIM(Identifier) 
+                                          ': ' 
+                                          FUNCTION 
+                                           TRIM(DecryptedPassword)
+                                  END-IF
+                              END-IF
                        END-IF
                END-READ
            END-PERFORM.
+
            DISPLAY ""
            DISPLAY "Press any key to continue."
            ACCEPT Temp
