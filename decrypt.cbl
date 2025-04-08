@@ -30,9 +30,9 @@
        
                MOVE Hash(J:1) TO CharHash
                MOVE FUNCTION ORD(CharHash) TO CodeHash
-             
-               *> .csv can't handle commas (ascii 44) so we add 1 in encrypt. 
-               IF CodeEncrypted > 44
+       
+               *> Skip commas since we save in .csv
+               IF CodeEncrypted = 45
                    SUBTRACT 1 FROM CodeEncrypted
                END-IF
                COMPUTE CodeDecrypted = FUNCTION MOD(CodeEncrypted - 
