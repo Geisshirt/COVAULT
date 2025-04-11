@@ -111,7 +111,6 @@
        AddPassword.
            OPEN EXTEND PswFile
            IF FileStatus NOT = '00' THEN
-               DISPLAY 'Error opening file for appending.'
                CLOSE PswFile
               STOP RUN
            END-IF
@@ -122,7 +121,8 @@
            ACCEPT NewPassword
     
            IF FUNCTION TRIM(NewPassword) = '' THEN
-               MOVE 'Auto generated password.' TO NewPassword
+               CALL 'Generator' USING Identifier NewPassword
+           
            END-IF
 
            CALL 'Encrypt'
@@ -146,20 +146,12 @@
     
            MOVE TempRecord TO PasswordRecord
            WRITE PasswordRecord
-    
-           IF FileStatus NOT = '00' THEN
-               DISPLAY 'Error writing to file. Status: ' FileStatus
-           ELSE
-               DISPLAY 'Password saved successfully!'
-           END-IF
-    
            CLOSE PswFile.
 
        ViewPassword.
            MOVE 'N' TO EOF  *> Reset EOF flag
            OPEN INPUT PswFile
            IF FileStatus NOT = '00' THEN
-               DISPLAY 'Error opening file for reading.'
                CLOSE PswFile
                STOP RUN
            END-IF
@@ -190,8 +182,6 @@
                                USING ReadPassword 
                                      MainPassword 
                                      ReadPassword
-       
-                           display "here " ReadPassword
 
                            IF FUNCTION TRIM(Identifier) = ''
                                DISPLAY 'ID: ' 
