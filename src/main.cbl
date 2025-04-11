@@ -28,10 +28,7 @@
        01  ReadIdentifier         PIC X(50).
        01  ReadPassword           PIC X(50).
        01  Temp                   PIC X(1).
-       01  DecryptedPassword      PIC X(50).
        01  EncryptedMainPassword  PIC X(100).
-       01  EncryptedUserPassword  PIC X(100).
-       01  FirstLineProcessed      PIC X(1) VALUE 'N'.
 
        PROCEDURE DIVISION.
            OPEN INPUT PswFile
@@ -128,6 +125,12 @@
                MOVE 'Auto generated password.' TO NewPassword
            END-IF
 
+           CALL 'Encrypt'
+               USING
+                   Identifier
+                   MainPassword
+                   Identifier
+
            CALL 'Encrypt' 
                USING 
                    NewPassword 
@@ -177,27 +180,33 @@
                        IF FUNCTION TRIM(ReadIdentifier) = 'USER'
                            CONTINUE
                        ELSE
-                              CALL 'Decrypt'
-                                  USING ReadPassword 
-                                        MainPassword 
-                                        DecryptedPassword
+                           CALL 'Decrypt'
+                               USING
+                                   ReadIdentifier
+                                   MainPassword
+                                   ReadIdentifier
+
+                           CALL 'Decrypt'
+                               USING ReadPassword 
+                                     MainPassword 
+                                     ReadPassword
        
-                              IF FUNCTION TRIM(Identifier) = '' THEN
-                                  DISPLAY 'ID: ' 
-                                          FUNCTION TRIM(ReadIdentifier) 
-                                          ', Password: ' 
-                                          FUNCTION 
-                                           TRIM(DecryptedPassword)
-                              ELSE
-                                  IF FUNCTION TRIM(ReadIdentifier) 
-                                          = FUNCTION TRIM(Identifier) 
-                                      DISPLAY 'Password for ' 
-                                          FUNCTION TRIM(Identifier) 
-                                          ': ' 
-                                          FUNCTION 
-                                           TRIM(DecryptedPassword)
-                                  END-IF
-                              END-IF
+                           display "here " ReadPassword
+
+                           IF FUNCTION TRIM(Identifier) = ''
+                               DISPLAY 'ID: ' 
+                               FUNCTION TRIM(ReadIdentifier) 
+                               ', Password: ' 
+                               FUNCTION TRIM(ReadPassword)
+                           ELSE
+                               IF FUNCTION TRIM(ReadIdentifier) = 
+                                       FUNCTION TRIM(Identifier) 
+                                   DISPLAY 'Password for ' 
+                                   FUNCTION TRIM(Identifier) 
+                                   ': ' 
+                                   FUNCTION TRIM(ReadPassword)
+                               END-IF
+                          END-IF
                        END-IF
                END-READ
            END-PERFORM.
