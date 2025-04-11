@@ -1,29 +1,3 @@
-      *IDENTIFICATION DIVISION.
-      *PROGRAM-ID. Generator.
-
-      *DATA DIVISION.
-      *LINKAGE SECTION.
-      *01  ReturnString     PIC X(50).
-
-      *PROCEDURE DIVISION USING ReturnString.
-      *    MOVE "hello" TO ReturnString
-      *    GOBACK.
-
-      *END PROGRAM Generator.
-
-      *IDENTIFICATION DIVISION.
-      *PROGRAM-ID. Generator.
-
-      *DATA DIVISION.
-      *LINKAGE SECTION.
-      *01  ReturnString     PIC X(50).
-
-      *PROCEDURE DIVISION USING ReturnString.
-      *    MOVE "hello" TO ReturnString
-      *    GOBACK.
-
-      *END PROGRAM Generator.
-  
        IDENTIFICATION DIVISION.
        PROGRAM-ID. Generator.
 
@@ -41,7 +15,7 @@
        77  TOTAL-ASCII         PIC 9(09) VALUE 0.
        01  LOCAL-STRING        PIC X(50) VALUE SPACES.
        01  CHAR-TABLE.
-           05 CHARS            PIC X(52) VALUE 
+           05 CHARS            PIC X(52) VALUE
            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".
 
        LINKAGE SECTION.
@@ -51,7 +25,7 @@
        PROCEDURE DIVISION USING Identifier ReturnString.
            MOVE 0 TO TOTAL-ASCII
 
-           PERFORM VARYING I FROM 1 BY 1 UNTIL I > 
+           PERFORM VARYING I FROM 1 BY 1 UNTIL I >
                    FUNCTION LENGTH(Identifier)
                COMPUTE ASCII-VALUE = FUNCTION ORD(Identifier (I:1))
                ADD ASCII-VALUE TO TOTAL-ASCII
