@@ -31,11 +31,11 @@
                MOVE Hash(J:1) TO CharHash
                MOVE FUNCTION ORD(CharHash) TO CodeHash
        
-               *> Skip commas since we save in .csv
                COMPUTE CodeEncrypted = FUNCTION MOD(CodePassed + 
                    CodeHash - 32, 94) + 32
+               *> Replace commas since we save in .csv
                IF CodeEncrypted = 45
-                   ADD 1 TO CodeEncrypted
+                   MOVE 34 TO CodeEncrypted 
                END-IF
 
                MOVE FUNCTION CHAR(CodeEncrypted) TO CharEncrypted
